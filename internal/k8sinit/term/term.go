@@ -35,9 +35,13 @@ func CreateTerminal() error {
 		return err
 	}
 
-	defer func() { _ = ptmx.Close() }()
-
 	ch := make(chan os.Signal, 1)
+
+	defer func() {
+		close(ch)
+		_ = ptmx.Close()
+	}()
+
 	signal.Notify(ch, unix.SIGWINCH)
 	go func() {
 		for range ch {
