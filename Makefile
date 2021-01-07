@@ -1,12 +1,12 @@
-.PHONY: docker build
+.PHONY: remote build
 
 all: build
 
 build:
 	./build.sh $(filter-out $@,$(MAKECMDGOALS))
 
-docker:
-	./docker.sh $(filter-out $@,$(MAKECMDGOALS))
+remote:
+	./remote.sh $(filter-out $@,$(MAKECMDGOALS))
 
 %:
 	@:
