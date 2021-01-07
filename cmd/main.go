@@ -23,7 +23,6 @@ import (
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/term"
-	"golang.org/x/sys/unix"
 	klog "k8s.io/klog/v2"
 	"time"
 )
@@ -42,40 +41,44 @@ func init() {
 func main() {
 	flag.Parse()
 	klog.V(0).Infof("hello from k3s init")
-	unix.Setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
-	err := mount.MountSysVFS()
+	err := system.FirstStep()
 	if err != nil {
-		klog.V(0).Error(err, "error at mounting sys vfses")
+		klog.V(0).Error(err, "cannot execute first step")
 	} else {
-		err = modules.LoadBaseModules()
+		err = mount.MountSysVFS()
 		if err != nil {
 			klog.V(0).Error(err, "error at mounting sys vfses")
 		} else {
-			err = network.StartNetworking()
+			err = modules.LoadBaseModules()
 			if err != nil {
-				klog.V(0).Error(err, "cannot start networking")
+				klog.V(0).Error(err, "error at mounting sys vfses")
 			} else {
-				klog.V(0).Infof("feeding random")
-				system.SeedRandom()
-				klog.V(0).Infof("entering ui")
-				for {
-					term.ClearScreen()
-					cmd, err := term.ReadKeyPress()
-					if err != nil {
-						klog.V(0).Error(err, "cannot get command")
-					}
-					if cmd == 'C' {
-						err = term.CreateTerminal()
+				err = network.StartNetworking()
+				if err != nil {
+					klog.V(0).Error(err, "cannot start networking")
+				} else {
+					klog.V(0).Infof("feeding random")
+					system.SeedRandom()
+					klog.V(0).Infof("entering ui")
+					for {
+						term.ClearScreen()
+						cmd, err := term.ReadKeyPress()
 						if err != nil {
-							klog.V(0).Error(err, "error occured")
+							klog.V(0).Error(err, "cannot get command")
 						}
-					} else if cmd == 'P' {
-						system.Poweroff()
-					} else if cmd == 'R' {
-						system.Reboot()
-					} else {
-						klog.V(0).Infof("Unknown command...")
-						time.Sleep(time.Second * 5)
+						if cmd == 'C' {
+							err = term.CreateTerminal()
+							if err != nil {
+								klog.V(0).Error(err, "error occured")
+							}
+						} else if cmd == 'P' {
+							system.Poweroff()
+						} else if cmd == 'R' {
+							system.Reboot()
+						} else {
+							klog.V(0).Infof("Unknown command...")
+							time.Sleep(time.Second * 5)
+						}
 					}
 				}
 			}
