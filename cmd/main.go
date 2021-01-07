@@ -21,9 +21,10 @@ import (
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/modules"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/mount"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/term"
+	"golang.org/x/sys/unix"
 	klog "k8s.io/klog/v2"
-	"os"
-	"os/exec"
 	"time"
 )
 
@@ -41,6 +42,7 @@ func init() {
 func main() {
 	flag.Parse()
 	klog.V(0).Infof("hello from k3s init")
+	unix.Setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 	err := mount.MountSysVFS()
 	if err != nil {
 		klog.V(0).Error(err, "error at mounting sys vfses")
@@ -52,19 +54,36 @@ func main() {
 			err = network.StartNetworking()
 			if err != nil {
 				klog.V(0).Error(err, "cannot start networking")
+			} else {
+				klog.V(0).Infof("feeding random")
+				system.SeedRandom()
+				klog.V(0).Infof("entering ui")
+				for {
+					term.ClearScreen()
+					cmd, err := term.ReadKeyPress()
+					if err != nil {
+						klog.V(0).Error(err, "cannot get command")
+					}
+					if cmd == 'C' {
+						err = term.CreateTerminal()
+						if err != nil {
+							klog.V(0).Error(err, "error occured")
+						}
+					} else if cmd == 'P' {
+						system.Poweroff()
+					} else if cmd == 'R' {
+						system.Reboot()
+					} else {
+						klog.V(0).Infof("Unknown command...")
+						time.Sleep(time.Second * 5)
+					}
+				}
 			}
 		}
 	}
 
-	cmd := exec.Command("/bin/sh")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		klog.V(0).Error(err, "error occured")
-	}
 	for {
+		klog.V(0).Infof("Sleeping...")
 		time.Sleep(time.Hour)
 	}
 }

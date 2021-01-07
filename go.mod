@@ -17,7 +17,10 @@ module github.com/kazimsarikaya/k8sinit
 go 1.15
 
 require (
+	github.com/creack/pty v1.1.11
 	github.com/pkg/errors v0.9.1
 	github.com/vishvananda/netlink v1.1.0
+	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68
+	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf
 	k8s.io/klog/v2 v2.4.0
 )
