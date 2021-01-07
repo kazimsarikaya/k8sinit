@@ -1,0 +1,6 @@
+/bin/busybox
+/bin/sh
+/sbin/apk
+/usr/sbin/zfs
+/usr/sbin/zpool
+/usr/share/udhcpc/default.script
