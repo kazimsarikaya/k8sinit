@@ -89,3 +89,14 @@ func ListZpools() ([]*zfs.Zpool, error) {
 	klog.V(5).Infof("zpool %v, err: %v", zps, err)
 	return zps, err
 }
+
+func CloseZpools() {
+	cmd := exec.Command("zpool", "export", "-a")
+	if err := cmd.Run(); err != nil {
+		klog.V(0).Error(err, "cannot export zpools,trying with force")
+		cmd := exec.Command("zpool", "export", "-af")
+		if err := cmd.Run(); err != nil {
+			klog.V(0).Error(err, "cannot export zpools with force")
+		}
+	}
+}
