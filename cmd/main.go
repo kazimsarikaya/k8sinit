@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/management"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/modules"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/mount"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
@@ -40,10 +41,6 @@ func init() {
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "true")
 }
-
-var (
-	managementServices *system.ManagementServices
-)
 
 func loader() error {
 	err := system.FirstStep()
@@ -74,7 +71,8 @@ func loader() error {
 		return errors.Wrapf(err, "cannot create tftp root dir")
 	}
 
-	managementServices, err = system.NewManagementServices(tftproot, htdocsDir)
+	managementServices, err := management.NewOrGetManagementServices(tftproot, htdocsDir)
+	system.SetManagementServicesStopper(managementServices)
 	if err != nil {
 		return errors.Wrapf(err, "cannot setup management services")
 	}
@@ -96,10 +94,8 @@ func showUI() error {
 				klog.V(0).Error(err, "error occured")
 			}
 		} else if cmd == 'P' {
-			managementServices.StopAll()
 			system.Poweroff()
 		} else if cmd == 'R' {
-			managementServices.StopAll()
 			system.Reboot()
 		} else {
 			klog.V(0).Infof("Unknown command...")
