@@ -18,6 +18,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
 	"net/http"
 )
@@ -43,13 +44,88 @@ func DiskApiListZpools(w http.ResponseWriter, r *http.Request) {
 }
 
 func DiskApiGetZpool(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	pool, ok := vars["pool"]
+	if !ok || pool == "" {
+		http.Error(w, "no pool param", http.StatusBadRequest)
+		return
+	}
+	zps, err := system.ListZpools()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, zp := range zps {
+		if zp.Name == pool {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "data": zp})
+			return
+		}
+	}
+	http.Error(w, "pool not found", http.StatusNotFound)
 }
 
 func DiskApiListDatasets(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	pool, ok := vars["pool"]
+	if !ok || pool == "" {
+		http.Error(w, "no pool param", http.StatusBadRequest)
+		return
+	}
+	zps, err := system.ListZpools()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, zp := range zps {
+		if zp.Name == pool {
+			dses, err := zp.Datasets()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "data": dses})
+			return
+		}
+	}
+	http.Error(w, "pool not found", http.StatusNotFound)
 }
 
 func DiskApiGetDataset(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	pool, ok := vars["pool"]
+	if !ok || pool == "" {
+		http.Error(w, "no pool param", http.StatusBadRequest)
+		return
+	}
+	dataset, ok := vars["dataset"]
+	if !ok || dataset == "" {
+		http.Error(w, "no dataset param", http.StatusBadRequest)
+		return
+	}
+	zps, err := system.ListZpools()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, zp := range zps {
+		if zp.Name == pool {
+			dses, err := zp.Datasets()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			for _, ds := range dses {
+				if ds.Name == dataset {
+					w.Header().Set("Content-Type", "application/json")
+					json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "data": ds})
+					return
+				}
+			}
+			http.Error(w, "dataset not found", http.StatusNotFound)
+			return
+		}
+	}
+	http.Error(w, "pool not found", http.StatusNotFound)
 }

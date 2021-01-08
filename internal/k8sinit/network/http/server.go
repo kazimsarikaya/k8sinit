@@ -65,7 +65,7 @@ func NewNonBlockingHttpSever(htdocs string) (*NonBlockingHttpServer, error) {
 	router.HandleFunc("/api/zpools", api.DiskApiListZpools).Methods("GET")
 	router.HandleFunc("/api/zpools/{pool}", api.DiskApiGetZpool).Methods("GET")
 	router.HandleFunc("/api/zpools/{pool}/datasets", api.DiskApiListDatasets).Methods("GET")
-	router.HandleFunc("/api/zpools/{pool}/datasets/{dataset}", api.DiskApiGetDataset).Methods("GET")
+	router.HandleFunc("/api/zpools/{pool}/datasets/{dataset:.*}", api.DiskApiGetDataset).Methods("GET")
 	router.HandleFunc("/api/system/reboot", api.SystemApiReboot).Methods("POST")
 	router.HandleFunc("/api/system/poweroff", api.SystemApiPoweroff).Methods("POST")
 	router.HandleFunc("/api/system/install", api.SystemApiInstall).Methods("POST")
