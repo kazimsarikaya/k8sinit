@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -eu
 
 cmd=${1:-build}
 
