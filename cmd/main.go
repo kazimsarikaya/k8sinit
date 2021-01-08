@@ -24,6 +24,7 @@ import (
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/term"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	klog "k8s.io/klog/v2"
 	"time"
 )
@@ -32,12 +33,17 @@ var (
 	version   = ""
 	buildTime = ""
 	goVersion = ""
+	htdocsDir = ""
 )
 
 func init() {
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "true")
 }
+
+var (
+	managementServices *system.ManagementServices
+)
 
 func loader() error {
 	err := system.FirstStep()
@@ -62,6 +68,17 @@ func loader() error {
 	if err != nil {
 		return errors.Wrapf(err, "cannot setup apk")
 	}
+
+	tftproot, err := ioutil.TempDir("/tmp", "tftp")
+	if err != nil {
+		return errors.Wrapf(err, "cannot create tftp root dir")
+	}
+
+	managementServices, err = system.NewManagementServices(tftproot, htdocsDir)
+	if err != nil {
+		return errors.Wrapf(err, "cannot setup management services")
+	}
+	managementServices.StartHttp()
 	return nil
 }
 
@@ -79,8 +96,10 @@ func showUI() error {
 				klog.V(0).Error(err, "error occured")
 			}
 		} else if cmd == 'P' {
+			managementServices.StopAll()
 			system.Poweroff()
 		} else if cmd == 'R' {
+			managementServices.StopAll()
 			system.Reboot()
 		} else {
 			klog.V(0).Infof("Unknown command...")

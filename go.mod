@@ -18,6 +18,7 @@ go 1.15
 
 require (
 	github.com/creack/pty v1.1.11
+	github.com/gorilla/mux v1.8.0
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/vishvananda/netlink v1.1.0

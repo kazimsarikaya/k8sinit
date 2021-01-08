@@ -17,8 +17,12 @@ limitations under the License.
 package term
 
 import (
+	"fmt"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
 	"github.com/pkg/errors"
+	klog "k8s.io/klog/v2"
 	"os"
+	"strings"
 )
 
 func ClearScreen() {
@@ -43,7 +47,16 @@ func ClearScreen() {
     ███████║   ██║   ███████║   ██║   ███████╗██║ ╚═╝ ██║
     ╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝
 
-For Console press   C
+`)
+
+	addrs, err := network.ListIpAddresses()
+	if err != nil {
+		klog.V(5).Error(err, "cannot get ip addresses")
+	} else {
+		list := strings.Join(addrs, ",")
+		os.Stdout.WriteString(fmt.Sprintf("Ip Adresses: %s\n\n", list))
+	}
+	os.Stdout.WriteString(`For Console press   C
 For Poweroff press  P
 For Reboot press    R
 `)

@@ -28,9 +28,10 @@ import (
 )
 
 type NonBlockingTftpSever struct {
-	undi   string
-	server *tftp.Server
-	wg     *sync.WaitGroup
+	undi    string
+	server  *tftp.Server
+	wg      *sync.WaitGroup
+	started bool
 }
 
 func NewNonBlockingTftpSever(tftproot string) (*NonBlockingTftpSever, error) {
@@ -41,8 +42,9 @@ func NewNonBlockingTftpSever(tftproot string) (*NonBlockingTftpSever, error) {
 	var wg sync.WaitGroup
 
 	s := &NonBlockingTftpSever{
-		undi: undi,
-		wg:   &wg,
+		undi:    undi,
+		wg:      &wg,
+		started: false,
 	}
 
 	server := tftp.NewServer(s.readHandler, nil)
@@ -56,16 +58,20 @@ func NewNonBlockingTftpSever(tftproot string) (*NonBlockingTftpSever, error) {
 func (s *NonBlockingTftpSever) Start(ipaddr string) {
 	s.wg.Add(1)
 	go func() {
+		defer s.wg.Done()
 		err := s.server.ListenAndServe(ipaddr + ":69")
 		if err != nil {
 			klog.V(0).Error(err, "cannot start tftp server")
 		}
 	}()
+	s.started = true
 }
 
 func (s *NonBlockingTftpSever) Stop() {
-	s.server.Shutdown()
-	s.wg.Done()
+	if s.started {
+		s.server.Shutdown()
+	}
+	s.Wait()
 }
 
 func (s *NonBlockingTftpSever) Wait() {

@@ -98,3 +98,15 @@ func StartNetworking() error {
 	}
 	return nil
 }
+
+func ListIpAddresses() ([]string, error) {
+	addrs, err := netlink.AddrList(nil, netlink.FAMILY_ALL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get ip addresses")
+	}
+	var result []string
+	for _, addr := range addrs {
+		result = append(result, addr.String())
+	}
+	return result, nil
+}
