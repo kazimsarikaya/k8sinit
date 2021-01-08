@@ -99,5 +99,8 @@ func LoadBaseModules() error {
 			break
 		}
 	}
+	if err := Modprobe("zfs"); err != nil {
+		return errors.Wrapf(err, "cannot load zfs module")
+	}
 	return nil
 }
