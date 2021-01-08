@@ -18,6 +18,7 @@ go 1.15
 
 require (
 	github.com/creack/pty v1.1.11
+	github.com/pin/tftp v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/vishvananda/netlink v1.1.0
 	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68
