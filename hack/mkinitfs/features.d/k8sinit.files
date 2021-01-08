@@ -4,3 +4,5 @@
 /usr/sbin/zfs
 /usr/sbin/zpool
 /usr/share/udhcpc/default.script
+/bin/lsblk
+/usr/sbin/parted
