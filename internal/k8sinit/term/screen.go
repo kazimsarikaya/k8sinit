@@ -19,6 +19,7 @@ package term
 import (
 	"fmt"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
 	"github.com/pkg/errors"
 	klog "k8s.io/klog/v2"
 	"os"
@@ -49,12 +50,16 @@ func ClearScreen() {
 
 `)
 
+	found, role, err := system.GetKernelParameterValue("k8sinit.role")
+	if !found {
+		role = "node"
+	}
 	addrs, err := network.ListIpAddresses()
 	if err != nil {
 		klog.V(5).Error(err, "cannot get ip addresses")
 	} else {
 		list := strings.Join(addrs, ",")
-		os.Stdout.WriteString(fmt.Sprintf("Ip Adresses: %s\n\n", list))
+		os.Stdout.WriteString(fmt.Sprintf("Role: %v\nIp Adresses: %s\n\n", role, list))
 	}
 	os.Stdout.WriteString(`For Console press   C
 For Poweroff press  P
