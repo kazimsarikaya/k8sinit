@@ -23,6 +23,7 @@ import (
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/term"
+	"github.com/pkg/errors"
 	klog "k8s.io/klog/v2"
 	"time"
 )
@@ -38,50 +39,67 @@ func init() {
 	flag.Set("logtostderr", "true")
 }
 
+func loader() error {
+	err := system.FirstStep()
+	if err != nil {
+		return errors.Wrapf(err, "cannot execute first step")
+	}
+	err = mount.MountSysVFS()
+	if err != nil {
+		return errors.Wrapf(err, "error at mounting sys vfses")
+	}
+	err = modules.LoadBaseModules()
+	if err != nil {
+		return errors.Wrapf(err, "error at mounting sys vfses")
+	}
+	err = network.StartNetworking()
+	if err != nil {
+		return errors.Wrapf(err, "cannot start networking")
+	}
+	klog.V(0).Infof("feeding random")
+	system.SeedRandom()
+	err = system.SetupDefaultApkRepos()
+	if err != nil {
+		return errors.Wrapf(err, "cannot setup apk")
+	}
+	return nil
+}
+
+func showUI() error {
+	klog.V(0).Infof("entering ui")
+	for {
+		term.ClearScreen()
+		cmd, err := term.ReadKeyPress()
+		if err != nil {
+			klog.V(0).Error(err, "cannot get command")
+		}
+		if cmd == 'C' {
+			err = term.CreateTerminal()
+			if err != nil {
+				klog.V(0).Error(err, "error occured")
+			}
+		} else if cmd == 'P' {
+			system.Poweroff()
+		} else if cmd == 'R' {
+			system.Reboot()
+		} else {
+			klog.V(0).Infof("Unknown command...")
+			time.Sleep(time.Second * 5)
+		}
+	}
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	klog.V(0).Infof("hello from k3s init")
-	err := system.FirstStep()
+	err := loader()
 	if err != nil {
-		klog.V(0).Error(err, "cannot execute first step")
+		klog.V(0).Error(err, "cannot load system")
 	} else {
-		err = mount.MountSysVFS()
+		err = showUI()
 		if err != nil {
-			klog.V(0).Error(err, "error at mounting sys vfses")
-		} else {
-			err = modules.LoadBaseModules()
-			if err != nil {
-				klog.V(0).Error(err, "error at mounting sys vfses")
-			} else {
-				err = network.StartNetworking()
-				if err != nil {
-					klog.V(0).Error(err, "cannot start networking")
-				} else {
-					klog.V(0).Infof("feeding random")
-					system.SeedRandom()
-					klog.V(0).Infof("entering ui")
-					for {
-						term.ClearScreen()
-						cmd, err := term.ReadKeyPress()
-						if err != nil {
-							klog.V(0).Error(err, "cannot get command")
-						}
-						if cmd == 'C' {
-							err = term.CreateTerminal()
-							if err != nil {
-								klog.V(0).Error(err, "error occured")
-							}
-						} else if cmd == 'P' {
-							system.Poweroff()
-						} else if cmd == 'R' {
-							system.Reboot()
-						} else {
-							klog.V(0).Infof("Unknown command...")
-							time.Sleep(time.Second * 5)
-						}
-					}
-				}
-			}
+			klog.V(0).Error(err, "error at ui")
 		}
 	}
 
