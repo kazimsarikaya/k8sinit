@@ -102,6 +102,7 @@ func (s *NonBlockingHttpServer) Stop() {
 		s.server.Shutdown(context.Background())
 	}
 	s.Wait()
+	s.started = false
 }
 
 func (s *NonBlockingHttpServer) Wait() {

@@ -72,6 +72,7 @@ func (s *NonBlockingTftpSever) Stop() {
 		s.server.Shutdown()
 	}
 	s.Wait()
+	s.started = false
 }
 
 func (s *NonBlockingTftpSever) Wait() {
