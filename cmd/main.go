@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/management"
-	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/modules"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/mount"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
@@ -51,7 +50,7 @@ func loader() error {
 	if err != nil {
 		return errors.Wrapf(err, "error at mounting sys vfses")
 	}
-	err = modules.LoadBaseModules()
+	err = system.LoadBaseModules()
 	if err != nil {
 		return errors.Wrapf(err, "error at mounting sys vfses")
 	}

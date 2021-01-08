@@ -24,6 +24,8 @@ import (
 	"github.com/pkg/errors"
 	klog "k8s.io/klog/v2"
 	"os/exec"
+	"regexp"
+	"strings"
 )
 
 type BlockDevice struct {
@@ -31,6 +33,31 @@ type BlockDevice struct {
 	Path          string
 	PartitionType string `json:"pttype"`
 	Size          uint64
+}
+
+func LoadZpools() error {
+	cmd := exec.Command("zpool", "import")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "cannot list avaliable pools for import")
+	}
+	re := regexp.MustCompile(`pool: (.*)\b`)
+	matches := re.FindAllStringSubmatch(out.String(), -1)
+	if matches != nil {
+		for _, match := range matches {
+			if len(match) != 2 {
+				return fmt.Errorf("pool name error :%v", match)
+			}
+			zpn := strings.TrimSpace(match[1])
+
+			cmd = exec.Command("zpool", "import", zpn)
+			if err := cmd.Run(); err != nil {
+				return errors.Wrapf(err, "cannot import zpool %v", zpn)
+			}
+		}
+	}
+	return nil
 }
 
 func ListDisks() ([]*BlockDevice, error) {
@@ -59,6 +86,6 @@ func ListDisks() ([]*BlockDevice, error) {
 func ListZpools() ([]*zfs.Zpool, error) {
 	klog.V(5).Infof("list zpools called")
 	zps, err := zfs.ListZpools()
-	klog.V(0).Infof("zpool %v, err: %v", zps, err)
+	klog.V(5).Infof("zpool %v, err: %v", zps, err)
 	return zps, err
 }

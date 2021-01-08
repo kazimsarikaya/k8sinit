@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package modules
+package system
 
 import (
 	"bytes"
@@ -101,6 +101,9 @@ func LoadBaseModules() error {
 	}
 	if err := Modprobe("zfs"); err != nil {
 		return errors.Wrapf(err, "cannot load zfs module")
+	}
+	if err := LoadZpools(); err != nil {
+		return err
 	}
 	return nil
 }
