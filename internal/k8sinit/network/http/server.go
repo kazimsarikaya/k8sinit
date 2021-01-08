@@ -20,7 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/api"
 	klog "k8s.io/klog/v2"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -35,10 +37,19 @@ type NonBlockingHttpServer struct {
 	started bool
 }
 
+func fillMimes() {
+	mime.AddExtensionType(".js", "application/javascript; charset=utf-8")
+	mime.AddExtensionType(".css", "text/css; charset=utf-8")
+	mime.AddExtensionType(".html", "text/html; charset=utf-8")
+}
+
 func NewNonBlockingHttpSever(htdocs string) (*NonBlockingHttpServer, error) {
+	fillMimes()
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 	})
 
@@ -50,6 +61,14 @@ func NewNonBlockingHttpSever(htdocs string) (*NonBlockingHttpServer, error) {
 		started: false,
 	}
 
+	router.HandleFunc("/api/disks", api.DiskApiListBlockDevices).Methods("GET")
+	router.HandleFunc("/api/zpools", api.DiskApiListZpools).Methods("GET")
+	router.HandleFunc("/api/zpools/{pool}", api.DiskApiGetZpool).Methods("GET")
+	router.HandleFunc("/api/zpools/{pool}/datasets", api.DiskApiListDatasets).Methods("GET")
+	router.HandleFunc("/api/zpools/{pool}/datasets/{dataset}", api.DiskApiGetDataset).Methods("GET")
+	router.HandleFunc("/api/system/reboot", api.SystemApiReboot).Methods("POST")
+	router.HandleFunc("/api/system/poweroff", api.SystemApiPoweroff).Methods("POST")
+	router.HandleFunc("/api/system/install", api.SystemApiInstall).Methods("POST")
 	router.PathPrefix("/").HandlerFunc(srv.defaultHandler)
 
 	server := &http.Server{
@@ -71,11 +90,15 @@ func (s *NonBlockingHttpServer) defaultHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	if path == "" || path == "/" {
+		path = "index.html"
+	}
+
 	path = filepath.Join(s.htdocs, path)
 
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		http.ServeFile(w, r, filepath.Join(s.htdocs, "index.html"))
+		http.Error(w, "404 Not Found", http.StatusNotFound)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
