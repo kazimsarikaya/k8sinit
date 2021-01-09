@@ -19,7 +19,6 @@ package tftp
 import (
 	"fmt"
 	"github.com/pin/tftp"
-	"github.com/pkg/errors"
 	"io"
 	klog "k8s.io/klog/v2"
 	"os"
@@ -28,23 +27,20 @@ import (
 )
 
 type NonBlockingTftpSever struct {
-	undi    string
-	server  *tftp.Server
-	wg      *sync.WaitGroup
-	started bool
+	tftproot string
+	undi     string
+	server   *tftp.Server
+	wg       *sync.WaitGroup
+	started  bool
 }
 
 func NewNonBlockingTftpSever(tftproot string) (*NonBlockingTftpSever, error) {
-	undi, err := DownloadIpxeUndi(tftproot)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot get undi pxe")
-	}
 	var wg sync.WaitGroup
 
 	s := &NonBlockingTftpSever{
-		undi:    undi,
-		wg:      &wg,
-		started: false,
+		tftproot: tftproot,
+		wg:       &wg,
+		started:  false,
 	}
 
 	server := tftp.NewServer(s.readHandler, nil)
@@ -56,6 +52,11 @@ func NewNonBlockingTftpSever(tftproot string) (*NonBlockingTftpSever, error) {
 }
 
 func (s *NonBlockingTftpSever) Start(ipaddr string) {
+	undi, err := DownloadIpxeUndi(s.tftproot)
+	if err != nil {
+		klog.V(0).Error(err, "cannot download "+undifilename)
+	}
+	s.undi = undi
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
