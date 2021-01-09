@@ -3,6 +3,7 @@
 cmd=${1:-build}
 
 if [ "x$cmd" == "xbuild" ]; then
+  modprobe zfs
   REV=$(git describe --long --tags --match='v*' --dirty 2>/dev/null || git rev-list -n1 HEAD)
   NOW=$(date +'%Y-%m-%d_%T')
   GOV=$(go version)
