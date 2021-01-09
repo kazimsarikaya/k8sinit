@@ -37,7 +37,56 @@
         <div id="sysactionstatus"></div>
       </div>
       <div id="install" class="panel">
-        Install
+        <div class="form">
+          <div class="row">
+            <div class="cell">Disk</div>
+            <div class="cell"><select name="disklist" id="disklist"></select></div>
+            <div class="cell"><span>Force?</span> <input name="force" id="force" type="checkbox" /></div>
+          </div>
+          <div class="row">
+            <div class="cell">Pool Name</div>
+            <div class="cell"><input name="poolname" id="poolname" type="text" placeholder="zp_k8s" /></div>
+          </div>
+          <div class="row">
+            <div class="cell">External Network</div>
+            <div class="cell"><select name="extnet" id="extnext" class="iflist"></select></div>
+            <div class="cell">
+              <span>Static? <input name="extnettype" id="extnettype" type="checkbox" class="nettype" ip-id="extnetip" gw-id="extnetgw" /></span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="cell">&nbsp;</div>
+            <div class="cell">Ip Adress/Prefix</div>
+            <div class="cell"><input name="extnetip" id="extnetip" type="text" disabled="disabled" /></div>
+          </div>
+          <div class="row">
+            <div class="cell">&nbsp;</div>
+            <div class="cell">Gateway</div>
+            <div class="cell"><input name="extnetgw" id="extnetgw" type="text" disabled="disabled" /></div>
+          </div>
+          <div class="row">
+            <div class="cell">Admin Network</div>
+            <div class="cell"><select name="adminnet" id="adminnet" class="iflist"></select></div>
+            <div class="cell"><span>Static?</span> <input name="adminnettype" id="adminnettype" type="checkbox" class="nettype" ip-id="adminnetip" /></div>
+          </div>
+          <div class="row">
+            <div class="cell">&nbsp;</div>
+            <div class="cell">Ip Adress/Prefix</div>
+            <div class="cell"><input name="adminnetip" id="adminnetip" type="text" disabled="disabled" /></div>
+          </div>
+          <div class="row">
+            <div class="cell label">Internal Network</div>
+            <div class="cell"><select name="internalnet" id="internalnet" class="iflist"></select></div>
+            <div class="cell">Ip Adress/Prefix</div>
+            <div class="cell"><input name="internalnetip" id="internalnetip" type="text" placeholder="10.0.0.1/24" /></div>
+          </div>
+          <div class="row">
+            <div class="cell label">&nbsp;</div>
+            <div class="cell">
+              <div class="installaction"><a href="#install" action-data="{}"><span>Install</span></a></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

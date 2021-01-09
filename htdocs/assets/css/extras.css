@@ -15,3 +15,21 @@
 .sysaction span:hover {
   background: #323232;
 }
+
+.installaction {
+  display: inline-grid;
+}
+
+.installaction a {
+  color: #FFFFFF;
+}
+
+.installaction span {
+  padding: 5px 5px;
+  display: inline-block;
+  border: solid gray;
+}
+
+.installaction span:hover {
+  background: #323232;
+}

@@ -37,6 +37,22 @@ func GetInterfaces() ([]string, error) {
 	return result, nil
 }
 
+func GetInterfacesWithMacs() (map[string]string, error) {
+	links, err := netlink.LinkList()
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get ip links")
+	}
+	result := make(map[string]string)
+	for _, link := range links {
+		name := link.Attrs().Name
+		if name != "lo" {
+			mac := link.Attrs().HardwareAddr.String()
+			result[name] = mac
+		}
+	}
+	return result, nil
+}
+
 func InterfaceUp(ifname string) error {
 	link, err := netlink.LinkByName(ifname)
 	if err != nil {

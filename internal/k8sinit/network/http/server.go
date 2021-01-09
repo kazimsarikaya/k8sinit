@@ -69,6 +69,7 @@ func NewNonBlockingHttpSever(htdocs string) (*NonBlockingHttpServer, error) {
 	router.HandleFunc("/api/system/reboot", api.SystemApiReboot).Methods(http.MethodPost, http.MethodOptions)
 	router.HandleFunc("/api/system/poweroff", api.SystemApiPoweroff).Methods(http.MethodPost, http.MethodOptions)
 	router.HandleFunc("/api/system/install", api.SystemApiInstall).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/network/interfaces", api.NetworkApiInterfaceList).Methods(http.MethodGet, http.MethodOptions)
 	router.PathPrefix("/").HandlerFunc(srv.defaultHandler)
 
 	router.Use(func(next http.Handler) http.Handler {
