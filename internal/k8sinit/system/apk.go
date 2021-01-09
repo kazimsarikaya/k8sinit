@@ -37,3 +37,11 @@ http://dl-cdn.alpinelinux.org/alpine/v3.12/community
 	}
 	return nil
 }
+
+func apkInstallPacket(packetname string) error {
+	cmd := exec.Command("apk", "add", packetname)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "cannot add packet: %v", packetname)
+	}
+	return nil
+}

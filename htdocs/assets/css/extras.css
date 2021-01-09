@@ -1,0 +1,17 @@
+.sysaction {
+  display: inline-grid;
+}
+
+.sysaction a {
+  color: #FFFFFF;
+}
+
+.sysaction span {
+  padding: 25px 25px;
+  display: inline-block;
+  border: solid gray;
+}
+
+.sysaction span:hover {
+  background: #323232;
+}

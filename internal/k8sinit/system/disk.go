@@ -29,10 +29,10 @@ import (
 )
 
 type BlockDevice struct {
-	Name          string
-	Path          string
-	PartitionType string `json:"pttype"`
-	Size          uint64
+	Name   string
+	Path   string
+	Pttype string
+	Size   uint64
 }
 
 func LoadZpools() error {

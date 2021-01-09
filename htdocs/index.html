@@ -1,10 +1,51 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <title>k8sinit Management Console</title>
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-  </body>
+
+<head>
+  <meta charset="utf-8" />
+  <title>k8sinit Management Console</title>
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <link rel="stylesheet" href="assets/css/extras.css" />
+  <script type="text/javascript" src="assets/js/main.js"></script>
+  <script type="text/javascript" src="assets/js/api.js"></script>
+</head>
+
+<body>
+  <div id="container">
+    <div id="title">
+      <pre>
+██╗  ██╗ █████╗ ███████╗    ██╗███╗   ██╗██╗████████╗    ███████╗██╗   ██╗███████╗████████╗███████╗███╗   ███╗
+██║ ██╔╝██╔══██╗██╔════╝    ██║████╗  ██║██║╚══██╔══╝    ██╔════╝╚██╗ ██╔╝██╔════╝╚══██╔══╝██╔════╝████╗ ████║
+█████╔╝ ╚█████╔╝███████╗    ██║██╔██╗ ██║██║   ██║       ███████╗ ╚████╔╝ ███████╗   ██║   █████╗  ██╔████╔██║
+██╔═██╗ ██╔══██╗╚════██║    ██║██║╚██╗██║██║   ██║       ╚════██║  ╚██╔╝  ╚════██║   ██║   ██╔══╝  ██║╚██╔╝██║
+██║  ██╗╚█████╔╝███████║    ██║██║ ╚████║██║   ██║       ███████║   ██║   ███████║   ██║   ███████╗██║ ╚═╝ ██║
+╚═╝  ╚═╝ ╚════╝ ╚══════╝    ╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝       ╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝</pre>
+    </div>
+    <div class="nav">
+      <a href="#summary"><span class="active">Summary</span></a>
+      <a href="#system"><span>System</span></a>
+      <a href="#install"><span>Install</span></a>
+    </div>
+    <div class="panels">
+      <div id="summary" class="panel active">
+      </div>
+      <div id="system" class="panel">
+        <div class="sysactions">
+          <div class="sysaction"><a href="#reboot" action-data="{}"><span>Reboot</span></a></div>
+          <div class="sysaction"><a href="#poweroff" action-data="{}"><span>Poweroff</span></a></div>
+        </div>
+        <div id="sysactionstatus"></div>
+      </div>
+      <div id="install" class="panel">
+        Install
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript">
+    ready(function() {
+      console.log("hi");
+    });
+  </script>
+</body>
+
 </html>

@@ -61,15 +61,26 @@ func NewNonBlockingHttpSever(htdocs string) (*NonBlockingHttpServer, error) {
 		started: false,
 	}
 
-	router.HandleFunc("/api/disks", api.DiskApiListBlockDevices).Methods("GET")
-	router.HandleFunc("/api/zpools", api.DiskApiListZpools).Methods("GET")
-	router.HandleFunc("/api/zpools/{pool}", api.DiskApiGetZpool).Methods("GET")
-	router.HandleFunc("/api/zpools/{pool}/datasets", api.DiskApiListDatasets).Methods("GET")
-	router.HandleFunc("/api/zpools/{pool}/datasets/{dataset:.*}", api.DiskApiGetDataset).Methods("GET")
-	router.HandleFunc("/api/system/reboot", api.SystemApiReboot).Methods("POST")
-	router.HandleFunc("/api/system/poweroff", api.SystemApiPoweroff).Methods("POST")
-	router.HandleFunc("/api/system/install", api.SystemApiInstall).Methods("POST")
+	router.HandleFunc("/api/disks", api.DiskApiListBlockDevices).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/zpools", api.DiskApiListZpools).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/zpools/{pool}", api.DiskApiGetZpool).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/zpools/{pool}/datasets", api.DiskApiListDatasets).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/zpools/{pool}/datasets/{dataset:.*}", api.DiskApiGetDataset).Methods(http.MethodGet, http.MethodOptions)
+	router.HandleFunc("/api/system/reboot", api.SystemApiReboot).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/system/poweroff", api.SystemApiPoweroff).Methods(http.MethodPost, http.MethodOptions)
+	router.HandleFunc("/api/system/install", api.SystemApiInstall).Methods(http.MethodPost, http.MethodOptions)
 	router.PathPrefix("/").HandlerFunc(srv.defaultHandler)
+
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			if r.Method == http.MethodOptions {
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
 
 	server := &http.Server{
 		Handler:      router,
