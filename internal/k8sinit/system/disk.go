@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	klog "k8s.io/klog/v2"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -154,6 +155,109 @@ func createZfs(part, poolname string, output io.Writer) error {
 		output.Write([]byte("create boot dataset failed\n"))
 		return errors.Wrapf(err, "create boot dataset failed")
 	}
+	if _, err = zfs.CreateFilesystem(poolname+"/config", nil); err != nil {
+		output.Write([]byte("create config dataset failed\n"))
+		return errors.Wrapf(err, "create config dataset failed")
+	}
 	output.Write([]byte("creating zfs on " + part + " with name " + poolname + " succeed\n"))
 	return nil
+}
+
+func mount(mt, source, dest string) error {
+	if err := Modprobe(mt); err != nil {
+		return errors.Wrapf(err, "cannot load %v", mt)
+	}
+	cmd := exec.Command("/bin/mount", "-t", mt, source, dest)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	if err := cmd.Run(); err != nil {
+		rerr := fmt.Errorf("mount failed: mt %v src %v dst %v err %v out %v", mt, source, dest, err, out.String())
+		klog.V(0).Error(rerr, "mount failed")
+		return err
+	}
+	return nil
+}
+
+func umount(dest string) error {
+	cmd := exec.Command("/bin/umount", dest)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	if err := cmd.Run(); err != nil {
+		rerr := fmt.Errorf("umount failed: dst %v err %v out %v", dest, err, out.String())
+		klog.V(0).Error(rerr, "umount failed")
+		return rerr
+	}
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, in)
+	return err
+}
+
+func copyOsFilesToDisk(poolname string, output io.Writer) error {
+	output.Write([]byte("start copying os files\n"))
+	var out bytes.Buffer
+	cmd := exec.Command("/sbin/blkid", "-t", "LABEL=K8SINIT_INSTALLER", "-o", "device")
+	cmd.Stdout = &out
+	cmd.Stderr = output
+	if err := cmd.Run(); err != nil {
+		output.Write([]byte("cannot find installer cdrom\n"))
+		return errors.Wrapf(err, "cannot find installer cdrom")
+	}
+	cdrom := strings.TrimSpace(out.String())
+	if err := os.MkdirAll("/mnt/cdrom", 0755); err != nil {
+		output.Write([]byte("cannot create mnt dir\n"))
+		return errors.Wrapf(err, "cannot create mnt dir")
+	}
+	if err := mount("iso9660", cdrom, "/mnt/cdrom"); err != nil {
+		output.Write([]byte("cannot mount cdrom\n"))
+		return errors.Wrapf(err, "cannot mount cdrom")
+	}
+	defer umount("/mnt/cdrom")
+	if err := copyFile("/mnt/cdrom/vmlinuz", "/"+poolname+"/boot/vmlinuz"); err != nil {
+		output.Write([]byte("cannot copy vmlinuz\n"))
+		return errors.Wrapf(err, "cannot copy vmlinuz")
+	}
+	if err := copyFile("/mnt/cdrom/initramfs", "/"+poolname+"/boot/initramfs"); err != nil {
+		output.Write([]byte("cannot copy initramfs\n"))
+		return errors.Wrapf(err, "cannot copy initramfs")
+	}
+	output.Write([]byte("copying os files finished\n"))
+	return nil
+}
+
+func grubInstall(disk, poolname string, output io.Writer) error {
+	cmd := exec.Command("/usr/sbin/grub-install", "--boot-directory", "/"+poolname+"/boot", disk)
+	cmd.Stdout = output
+	cmd.Stderr = output
+	if err := cmd.Run(); err != nil {
+		klog.V(0).Error(err, "cannot install grub")
+		return err
+	}
+	out, err := os.OpenFile("/"+poolname+"/boot/grub/grub.cfg", os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	data := `echo loading kernel...
+linux /boot@/vmlinuz k8sinit.role=manager k8sinit.pool=%v
+echo loading initramfs
+initrd /boot@/initramfs
+boot`
+	bdata := []byte(fmt.Sprintf(data, poolname))
+	_, err = out.Write(bdata)
+	return err
 }

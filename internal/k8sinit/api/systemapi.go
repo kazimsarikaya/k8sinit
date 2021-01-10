@@ -71,9 +71,10 @@ func SystemApiInstall(w http.ResponseWriter, r *http.Request) {
 		ic.PoolName = "zp_k8s"
 	}
 	pr, pw := io.Pipe()
+	var stop bool = false
 	go func() {
 		scanner := bufio.NewScanner(pr)
-		for {
+		for !stop {
 			for scanner.Scan() {
 				conn.WriteMessage(messageType, scanner.Bytes())
 			}
@@ -87,6 +88,7 @@ func SystemApiInstall(w http.ResponseWriter, r *http.Request) {
 	err = system.InstallSystem(ic, pw)
 	if err != nil {
 		conn.WriteMessage(messageType, []byte("error: installaction error"))
-		conn.Close()
 	}
+	conn.Close()
+	stop = true
 }

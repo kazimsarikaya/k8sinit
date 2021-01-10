@@ -18,11 +18,13 @@ package system
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 	"io"
 	klog "k8s.io/klog/v2"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -101,7 +103,32 @@ func InstallSystem(config InstallConfig, output io.WriteCloser) error {
 		klog.V(0).Error(err, "create zfs failed")
 		return err
 	}
+	if err = copyOsFilesToDisk(config.PoolName, output); err != nil {
+		klog.V(0).Error(err, "copying os files failed")
+		return err
+	}
+	if err = grubInstall(config.Disk, config.PoolName, output); err != nil {
+		klog.V(0).Error(err, "cannot install grub")
+		return err
+	}
+	if err = writeConfig(config); err != nil {
+		klog.V(0).Error(err, "config write failed")
+		return errors.Wrapf(err, "config write failed")
+	}
 	klog.V(0).Infof("installtion ended")
-	output.Write([]byte("installation ended\n"))
+	output.Write([]byte("installation ended\neject cdrom and reboot\n"))
+	return nil
+}
+
+func writeConfig(config InstallConfig) error {
+	out, err := os.OpenFile("/"+config.PoolName+"/config/config.json", os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return errors.Wrapf(err, "cannot create config file")
+	}
+	defer out.Close()
+	enc := json.NewEncoder(out)
+	if err := enc.Encode(config); err != nil {
+		return errors.Wrapf(err, "cannot write config")
+	}
 	return nil
 }
