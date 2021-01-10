@@ -8,7 +8,7 @@ html, body {
 #container {
   background: #121212;
   width: 1024px;
-  height: 80%;
+  min-height: 80%;
   margin: 50px auto;
   border: solid green;
   position: relative;
