@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
 	"io"
 	"net/http"
@@ -60,7 +61,7 @@ func SystemApiInstall(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	var ic system.InstallConfig
+	var ic k8sinit.InstallConfig
 	err = json.NewDecoder(sr).Decode(&ic)
 	if err != nil {
 		conn.WriteMessage(messageType, []byte(fmt.Sprintf("error: cannot decode json data err: %v mt: %v", err, messageType)))

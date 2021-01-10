@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/management"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/mount"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network"
@@ -26,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	klog "k8s.io/klog/v2"
+	"strings"
 	"time"
 )
 
@@ -54,7 +56,13 @@ func loader() error {
 	if err != nil {
 		return errors.Wrapf(err, "error at mounting sys vfses")
 	}
-	err = network.StartNetworking()
+
+	ic, err := system.ReadConfig()
+	if err != nil {
+		return errors.Wrapf(err, "cannot read config")
+	}
+
+	err = network.StartNetworking(ic)
 	if err != nil {
 		return errors.Wrapf(err, "cannot start networking")
 	}
@@ -70,12 +78,23 @@ func loader() error {
 		return errors.Wrapf(err, "cannot create tftp root dir")
 	}
 
-	managementServices, err := management.NewOrGetManagementServices(tftproot, htdocsDir)
-	system.SetManagementServicesStopper(managementServices)
+	var poolName, ifname string = "", ""
+	if ic != nil {
+		poolName = ic.PoolName
+		ifname = ic.InternalNetwork
+	}
+	role := system.GetRole()
+	klog.V(0).Infof("setup management services")
+	managementServices, err := management.NewOrGetManagementServices(role, poolName, ifname, tftproot, htdocsDir)
 	if err != nil {
 		return errors.Wrapf(err, "cannot setup management services")
 	}
+	system.SetManagementServicesStopper(managementServices)
 	managementServices.StartHttp()
+	if role == k8sinit.RoleManager {
+		managementServices.StartTftp(strings.Split(ic.InternalNetworkIPAndPrefix, "/")[0])
+		managementServices.StartDhcp()
+	}
 	return nil
 }
 

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 	"io"
@@ -28,22 +29,6 @@ import (
 	"os/exec"
 	"strings"
 )
-
-type InstallConfig struct {
-	Disk                       string `json:"disk"`
-	Force                      bool   `json:"force"`
-	PoolName                   string `json:"poolname"`
-	ExternalNetwork            string `json:"extnet"`
-	IsExternalNetworkStatic    bool   `json:"extnettype"`
-	ExternalNetworkIPAndPrefix string `json:"extnetip"`
-	ExternalNetworkGateway     string `json:"extnetgw"`
-	AdminNetwork               string `json:"adminnet"`
-	IsAdminNetworkStatic       bool   `json:"adminnettype"`
-	AdminNetworkIPAndPrefix    string `json:"adminnetip"`
-	InternalNetwork            string `json:"internalnet"`
-	IsInternalNetworkStatic    bool   `json:"internalnettype"`
-	InternalNetworkIPAndPrefix string `json:"internalnetip"`
-}
 
 func FirstStep() error {
 	unix.Setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
@@ -58,7 +43,7 @@ func FirstStep() error {
 	return nil
 }
 
-func InstallSystem(config InstallConfig, output io.WriteCloser) error {
+func InstallSystem(config k8sinit.InstallConfig, output io.WriteCloser) error {
 	defer output.Close()
 	klog.V(0).Infof("starting install")
 	output.Write([]byte("starting install\n"))
@@ -111,7 +96,7 @@ func InstallSystem(config InstallConfig, output io.WriteCloser) error {
 		klog.V(0).Error(err, "cannot install grub")
 		return err
 	}
-	if err = writeConfig(config); err != nil {
+	if err = WriteConfig(config); err != nil {
 		klog.V(0).Error(err, "config write failed")
 		return errors.Wrapf(err, "config write failed")
 	}
@@ -120,7 +105,7 @@ func InstallSystem(config InstallConfig, output io.WriteCloser) error {
 	return nil
 }
 
-func writeConfig(config InstallConfig) error {
+func WriteConfig(config k8sinit.InstallConfig) error {
 	out, err := os.OpenFile("/"+config.PoolName+"/config/config.json", os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return errors.Wrapf(err, "cannot create config file")
@@ -131,4 +116,32 @@ func writeConfig(config InstallConfig) error {
 		return errors.Wrapf(err, "cannot write config")
 	}
 	return nil
+}
+
+func ReadConfig() (*k8sinit.InstallConfig, error) {
+	found, poolName, err := GetKernelParameterValue("k8sinit.pool")
+	if !found {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	in, err := os.Open("/" + poolName.(string) + "/config/config.json")
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot open config")
+	}
+	defer in.Close()
+	var config k8sinit.InstallConfig
+	if err := json.NewDecoder(in).Decode(&config); err != nil {
+		return nil, errors.Wrapf(err, "cannot decode config")
+	}
+	return &config, nil
+}
+
+func GetRole() string {
+	found, role, _ := GetKernelParameterValue("k8sinit.role")
+	if !found {
+		role = "node"
+	}
+	return role.(string)
 }

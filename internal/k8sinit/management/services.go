@@ -17,6 +17,8 @@ limitations under the License.
 package management
 
 import (
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network/dhcp"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network/http"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/network/tftp"
 	klog "k8s.io/klog/v2"
@@ -25,23 +27,30 @@ import (
 type ManagementServices struct {
 	tftpServer *tftp.NonBlockingTftpSever
 	httpServer *http.NonBlockingHttpServer
+	dhcpServer *dhcp.NonBlockingDhcpServer
 }
 
 var singletonManagementServices *ManagementServices = nil
 
-func NewOrGetManagementServices(tftpDir, htdocsDir string) (*ManagementServices, error) {
+func NewOrGetManagementServices(role, poolName, ifname, tftpDir, htdocsDir string) (*ManagementServices, error) {
 	if singletonManagementServices != nil {
 		return singletonManagementServices, nil
 	}
 	ms := &ManagementServices{}
 	var err error
-	ms.tftpServer, err = tftp.NewNonBlockingTftpSever(tftpDir)
-	if err != nil {
-		return nil, err
-	}
 	ms.httpServer, err = http.NewNonBlockingHttpSever(htdocsDir)
 	if err != nil {
 		return nil, err
+	}
+	if role == k8sinit.RoleManager {
+		ms.tftpServer, err = tftp.NewNonBlockingTftpSever(tftpDir)
+		if err != nil && err != k8sinit.K8SInitNotInstalledError {
+			return nil, err
+		}
+		ms.dhcpServer, err = dhcp.NewNonBlockingDhcpSever(poolName, ifname)
+		if err != nil && err != k8sinit.K8SInitNotInstalledError {
+			return nil, err
+		}
 	}
 	singletonManagementServices = ms
 	return ms, nil
@@ -52,6 +61,11 @@ func (ms *ManagementServices) StopAll() {
 		klog.Infof("stopping tftp server")
 		klog.Flush()
 		ms.tftpServer.Stop()
+	}
+	if ms.dhcpServer != nil {
+		klog.Infof("stopping dhcp server")
+		klog.Flush()
+		ms.dhcpServer.Stop()
 	}
 	if ms.httpServer != nil {
 		klog.Infof("stopping http server")
@@ -66,4 +80,8 @@ func (ms *ManagementServices) StartTftp(ipaddr string) {
 
 func (ms *ManagementServices) StartHttp() {
 	ms.httpServer.Start()
+}
+
+func (ms *ManagementServices) StartDhcp() {
+	ms.dhcpServer.Start()
 }

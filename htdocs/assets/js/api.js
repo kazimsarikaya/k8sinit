@@ -102,7 +102,7 @@ ready(function() {
 
     // Connection opened
     socket.addEventListener('open', function(event) {
-      socket.send('{ "disk": "/dev/sda", "force": true,   "poolname": "zp_k8s" }');
+      socket.send('{ "disk": "/dev/sda", "force": true,   "poolname": "zp_k8s","extnet": "eth2","adminnet":"eth0" ,"internalnet":"eth1", "internalnetip":"10.0.0.1/24"}');
       console.log('data sended');
     });
 

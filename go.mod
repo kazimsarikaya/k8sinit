@@ -21,6 +21,7 @@ require (
 	github.com/google/uuid v1.1.4 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/insomniacslk/dhcp v0.0.0-20201112113307-4de412bc85d8
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible
 	github.com/pin/tftp v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
