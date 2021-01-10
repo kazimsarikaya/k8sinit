@@ -29,7 +29,7 @@ if [ "x$cmd" == "xbuild" ]; then
   cp -arv hack/syslinux.cfg tmp/iso/syslinux/
   CURDIR=`pwd`
   cd tmp/iso
-  genisoimage -J -R -o ../boot.iso -b syslinux/isolinux.bin -c syslinux/isolinux.cat -no-emul-boot -boot-load-size 4 -boot-info-table .
+  genisoimage -V K8INIT_INSTALLER -J -R -o ../boot.iso -b syslinux/isolinux.bin -c syslinux/isolinux.cat -no-emul-boot -boot-load-size 4 -boot-info-table .
   cd $CURDIR
 elif [ "x$cmd" == "xtest" ]; then
   shift
