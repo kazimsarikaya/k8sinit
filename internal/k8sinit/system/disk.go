@@ -100,3 +100,7 @@ func CloseZpools() {
 		}
 	}
 }
+
+func GetZpool(poolName string) (*zfs.Zpool, error) {
+	return zfs.GetZpool(poolName)
+}

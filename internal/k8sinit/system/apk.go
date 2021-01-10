@@ -18,6 +18,7 @@ package system
 
 import (
 	"github.com/pkg/errors"
+	"io"
 	"io/ioutil"
 	"os/exec"
 )
@@ -39,7 +40,13 @@ http://dl-cdn.alpinelinux.org/alpine/v3.12/community
 }
 
 func apkInstallPacket(packetname string) error {
+	return apkInstallPacketWithOutput(packetname, nil)
+}
+
+func apkInstallPacketWithOutput(packetname string, output io.Writer) error {
 	cmd := exec.Command("apk", "add", packetname)
+	cmd.Stdout = output
+	cmd.Stderr = output
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "cannot add packet: %v", packetname)
 	}

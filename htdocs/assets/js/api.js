@@ -92,3 +92,29 @@ ready(function() {
     }
   );
 });
+
+ready(function() {
+  onclick(get(".installaction a")[0], function(e) {
+    e.preventDefault();
+    // Create WebSocket connection.
+    var socket = new WebSocket('ws://192.168.99.119:8000/api/system/install');
+    var installoutput = get("#installoutput")[0];
+
+    // Connection opened
+    socket.addEventListener('open', function(event) {
+      socket.send('{ "disk": "/dev/sda", "force": true,   "poolname": "zp_k8s" }');
+      console.log('data sended');
+    });
+
+    socket.addEventListener('close', function(event) {
+      console.log('transaction ended');
+    });
+
+    // Listen for messages
+    socket.addEventListener('message', function(event) {
+      var line = create("div")
+      settext(line, event.data);
+      append2Parent(installoutput, line);
+    });
+  })
+});

@@ -17,8 +17,12 @@ limitations under the License.
 package api
 
 import (
+	"bufio"
 	"encoding/json"
+	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/system"
+	"io"
 	"net/http"
 	"time"
 )
@@ -42,5 +46,44 @@ func SystemApiPoweroff(w http.ResponseWriter, r *http.Request) {
 }
 
 func SystemApiInstall(w http.ResponseWriter, r *http.Request) {
-
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	messageType, sr, err := conn.NextReader()
+	if err != nil {
+		return
+	}
+	var ic system.InstallConfig
+	err = json.NewDecoder(sr).Decode(&ic)
+	if err != nil {
+		conn.WriteMessage(messageType, []byte(fmt.Sprintf("error: cannot decode json data err: %v mt: %v", err, messageType)))
+		conn.Close()
+		return
+	}
+	pr, pw := io.Pipe()
+	go func() {
+		scanner := bufio.NewScanner(pr)
+		for {
+			for scanner.Scan() {
+				conn.WriteMessage(messageType, scanner.Bytes())
+			}
+			if err := scanner.Err(); err != nil {
+				conn.WriteMessage(messageType, []byte("error occured "+err.Error()))
+				break
+			}
+		}
+		conn.Close()
+	}()
+	err = system.InstallSystem(ic, pw)
+	if err != nil {
+		conn.WriteMessage(messageType, []byte("error: installaction error"))
+		conn.Close()
+	}
 }

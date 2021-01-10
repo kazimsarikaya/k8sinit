@@ -80,7 +80,7 @@ function appendDataAsTable(parent, endpoint, title) {
       if (this.status >= 200 && this.status < 400) {
         var resp = JSON.parse(this.response);
         if (resp.success) {
-          if (resp.data.length > 0) {
+          if (resp.data != null && resp.data.length > 0) {
             fi = resp.data[0];
             var thead = create("div");
             appendClass(thead, "table");
@@ -114,7 +114,7 @@ function appendDataAsTable(parent, endpoint, title) {
             append2Parent(table, thead);
             append2Parent(table, tbody);
           } else {
-            var tbody = create(div);
+            var tbody = create("div");
             appendClass(tbody, "table");
             appendClass(tbody, "body");
             settext(tbody, "No " + title + " founded");
@@ -139,7 +139,7 @@ function appendDataAsTable(parent, endpoint, title) {
       settext(header, title);
       append2Parent(table, header);
       append2Parent(parel, table);
-      errbody = create(div);
+      errbody = create("div");
       appendClass(errbody, "table");
       appendClass(errbody, "error");
       settext(errbody, "Connection Error");
