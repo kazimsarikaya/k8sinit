@@ -6,3 +6,4 @@
 /usr/share/udhcpc/default.script
 /bin/lsblk
 /usr/sbin/parted
+/sbin/blkid
