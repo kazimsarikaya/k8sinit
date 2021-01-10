@@ -67,6 +67,9 @@ func SystemApiInstall(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 		return
 	}
+	if len(ic.PoolName) == 0 {
+		ic.PoolName = "zp_k8s"
+	}
 	pr, pw := io.Pipe()
 	go func() {
 		scanner := bufio.NewScanner(pr)

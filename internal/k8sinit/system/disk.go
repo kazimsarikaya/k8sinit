@@ -22,6 +22,7 @@ import (
 	"fmt"
 	zfs "github.com/mistifyio/go-zfs"
 	"github.com/pkg/errors"
+	"io"
 	klog "k8s.io/klog/v2"
 	"os/exec"
 	"regexp"
@@ -103,4 +104,56 @@ func CloseZpools() {
 
 func GetZpool(poolName string) (*zfs.Zpool, error) {
 	return zfs.GetZpool(poolName)
+}
+
+func partDisk(disk string, output io.Writer) error {
+	output.Write([]byte("partitioning " + disk + "\n"))
+	cmd := exec.Command("/usr/sbin/parted", disk, "-a", "opt", "-s", "--", "mklabel gpt mkpart grub 2048s 4095s set 1 bios_grub on mkpart zfs 4096s -2048s")
+	cmd.Stdout = output
+	cmd.Stderr = output
+	if err := cmd.Run(); err != nil {
+		output.Write([]byte("partitioning failed\n"))
+		return errors.Wrapf(err, "partitioning failed")
+	}
+	cmd = exec.Command("/usr/sbin/parted", disk, "p")
+	cmd.Stdout = output
+	cmd.Stderr = output
+	if err := cmd.Run(); err != nil {
+		output.Write([]byte("printing failed\n"))
+		return errors.Wrapf(err, "printing failed")
+	}
+	output.Write([]byte("partitioning " + disk + " completed\n"))
+	return nil
+}
+
+func createZfs(part, poolname string, output io.Writer) error {
+	output.Write([]byte("creating zfs on " + part + " with name " + poolname + "\n"))
+	_, err := zfs.CreateZpool(poolname, map[string]string{"ashift": "12"}, part)
+	if err != nil {
+		output.Write([]byte("zpool creation failed\n"))
+		return errors.Wrapf(err, "zpool creation failed")
+	}
+	ds, err := zfs.GetDataset(poolname)
+	if err != nil {
+		output.Write([]byte("cannot get root dataset\n"))
+		return errors.Wrapf(err, "cannot get root dataset")
+	}
+	if err := ds.SetProperty("dedup", "on"); err != nil {
+		output.Write([]byte("cannot set prop dedup\n"))
+		return errors.Wrapf(err, "cannot set prop dedup")
+	}
+	if err := ds.SetProperty("compress", "on"); err != nil {
+		output.Write([]byte("compress set prop dedup\n"))
+		return errors.Wrapf(err, "cannot set prop dedup")
+	}
+	if err := ds.SetProperty("xattr", "sa"); err != nil {
+		output.Write([]byte("xattr set prop dedup\n"))
+		return errors.Wrapf(err, "xattr set prop dedup")
+	}
+	if _, err = zfs.CreateFilesystem(poolname+"/boot", nil); err != nil {
+		output.Write([]byte("create boot dataset failed\n"))
+		return errors.Wrapf(err, "create boot dataset failed")
+	}
+	output.Write([]byte("creating zfs on " + part + " with name " + poolname + " succeed\n"))
+	return nil
 }

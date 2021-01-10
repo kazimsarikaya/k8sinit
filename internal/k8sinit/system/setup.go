@@ -93,6 +93,14 @@ func InstallSystem(config InstallConfig, output io.WriteCloser) error {
 			break
 		}
 	}
+	if err = partDisk(config.Disk, output); err != nil {
+		klog.V(0).Error(err, "partitioning failed")
+		return err
+	}
+	if err = createZfs(config.Disk+"2", config.PoolName, output); err != nil {
+		klog.V(0).Error(err, "create zfs failed")
+		return err
+	}
 	klog.V(0).Infof("installtion ended")
 	output.Write([]byte("installation ended\n"))
 	return nil
