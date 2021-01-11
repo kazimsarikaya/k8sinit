@@ -78,11 +78,7 @@ func NewNonBlockingDhcpSever(poolName, ifname string) (*NonBlockingDhcpServer, e
 		wg:      &wg,
 		started: false,
 	}
-	laddr := net.UDPAddr{
-		IP:   lip,
-		Port: dhcpv4.ServerPort,
-	}
-	server, err := server4.NewServer(ifname, &laddr, s.handler)
+	server, err := server4.NewServer(ifname, nil, s.handler)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot create dhcp server")
 	}
@@ -95,7 +91,9 @@ func (s *NonBlockingDhcpServer) Start() {
 	go func() {
 		s.started = true
 		for s.started {
-			s.server.Serve()
+			klog.V(0).Infof("dhcpd will be started")
+			err := s.server.Serve()
+			klog.V(0).Error(err, "dhcpd stopped it will be restarted")
 		}
 		s.wg.Done()
 	}()
