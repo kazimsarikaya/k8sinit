@@ -44,10 +44,14 @@ func CreateTerminal() error {
 
 	signal.Notify(ch, unix.SIGWINCH)
 	go func() {
-		for range ch {
-			if err := pty.InheritSize(os.Stdin, ptmx); err != nil {
-				klog.V(5).Error(err, "error resizing pty")
+		for sig := range ch {
+			if sig == unix.SIGWINCH {
+				if err := pty.InheritSize(os.Stdin, ptmx); err != nil {
+					klog.V(5).Error(err, "error resizing pty")
+				}
+				continue
 			}
+			break
 		}
 	}()
 	ch <- unix.SIGWINCH
