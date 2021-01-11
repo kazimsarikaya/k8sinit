@@ -32,20 +32,23 @@ func SetManagementServicesStopper(ms StopAller) {
 	managementServicesStopper = ms
 }
 
-func Poweroff() {
-	klog.V(0).Infof("System will be powered off")
+func stopSystem() {
 	managementServicesStopper.StopAll()
+	writeRandomSeed()
 	CloseZpools()
 	klog.Flush()
+}
+
+func Poweroff() {
+	klog.V(0).Infof("System will be powered off")
+	stopSystem()
 	unix.Reboot(unix.LINUX_REBOOT_CMD_POWER_OFF)
 	os.Exit(0)
 }
 
 func Reboot() {
 	klog.V(0).Infof("System will be rebooted")
-	managementServicesStopper.StopAll()
-	CloseZpools()
-	klog.Flush()
+	stopSystem()
 	unix.Reboot(unix.LINUX_REBOOT_CMD_RESTART)
 	os.Exit(0)
 }

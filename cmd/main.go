@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/management"
 	"github.com/kazimsarikaya/k8sinit/internal/k8sinit/mount"
@@ -69,7 +70,11 @@ func loader() error {
 		return errors.Wrapf(err, "cannot start networking")
 	}
 	klog.V(0).Infof("feeding random")
-	system.SeedRandom()
+	rndfile := ""
+	if ic != nil {
+		rndfile = fmt.Sprintf("/%v/config/rndfile", ic.PoolName)
+	}
+	system.SeedRandom(rndfile)
 	err = system.SetupDefaultApkRepos()
 	if err != nil {
 		return errors.Wrapf(err, "cannot setup apk")

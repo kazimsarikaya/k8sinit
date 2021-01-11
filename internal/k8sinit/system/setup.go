@@ -30,6 +30,10 @@ import (
 	"strings"
 )
 
+var (
+	singletonIC *k8sinit.InstallConfig = nil
+)
+
 func FirstStep() error {
 	unix.Setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 	cmd := exec.Command("/bin/busybox", "--install", "-s")
@@ -106,6 +110,8 @@ func InstallSystem(config k8sinit.InstallConfig, output io.WriteCloser) error {
 }
 
 func WriteConfig(config k8sinit.InstallConfig) error {
+	singletonIC = &config
+	writeRandomSeed()
 	out, err := os.OpenFile("/"+config.PoolName+"/config/config.json", os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return errors.Wrapf(err, "cannot create config file")
@@ -119,6 +125,9 @@ func WriteConfig(config k8sinit.InstallConfig) error {
 }
 
 func ReadConfig() (*k8sinit.InstallConfig, error) {
+	if singletonIC != nil {
+		return singletonIC, nil
+	}
 	found, poolName, err := GetKernelParameterValue("k8sinit.pool")
 	if !found {
 		poolName = "zp_k8s"
@@ -138,7 +147,8 @@ func ReadConfig() (*k8sinit.InstallConfig, error) {
 	if err := json.NewDecoder(in).Decode(&config); err != nil {
 		return nil, errors.Wrapf(err, "cannot decode config")
 	}
-	return &config, nil
+	singletonIC = &config
+	return singletonIC, nil
 }
 
 func GetRole() string {

@@ -17,16 +17,77 @@ limitations under the License.
 package system
 
 import (
+	"crypto/rand"
+	"fmt"
 	"io/ioutil"
-	"math/rand"
-	"time"
+	klog "k8s.io/klog/v2"
+	"os"
+	"strconv"
+	"strings"
 )
 
-func SeedRandom() {
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	var data [512]byte
-	rng.Read(data[:])
-	ioutil.WriteFile("/dev/random", data[:], 0666)
-	rng.Read(data[:])
-	ioutil.WriteFile("/dev/urandom", data[:], 0666)
+func getEntropyCount() int64 {
+	data, _ := ioutil.ReadFile("/proc/sys/kernel/random/entropy_avail")
+	ecnt, _ := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
+	klog.V(0).Infof("entropy count %v", ecnt)
+	return ecnt
+}
+
+func getRndWakeupThreshold() int64 {
+	data, _ := ioutil.ReadFile("/proc/sys/kernel/random/read_wakeup_threshold")
+	ecnt, _ := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
+	klog.V(0).Infof("threashold count %v", ecnt)
+	return ecnt
+}
+
+func writeRandomSeed() {
+	ic, _ := ReadConfig()
+	if ic != nil {
+		rndfile := fmt.Sprintf("/%v/config/rndfile", ic.PoolName)
+		data := make([]byte, 1024*1024*16)
+		in, _ := os.Open("/dev/urandom")
+		in.Read(data)
+		ioutil.WriteFile(rndfile, data, 0600)
+	}
+}
+
+func SeedRandom(rndfile string) {
+	thres := getRndWakeupThreshold()
+	max_ecnt := getEntropyCount()
+	if rndfile != "" {
+		data, err := ioutil.ReadFile(rndfile)
+		if err == nil {
+			ioutil.WriteFile("/dev/random", data, 0666)
+			ioutil.WriteFile("/dev/urandom", data, 0666)
+			ecnt := getEntropyCount()
+			if ecnt > max_ecnt {
+				max_ecnt = ecnt
+			}
+			if ecnt >= thres || ecnt < max_ecnt {
+				klog.V(0).Infof("seed random done")
+				return
+			}
+		}
+	}
+	max_ecnt = getEntropyCount()
+	for {
+		klog.V(0).Infof("try to seed random, please produce entropy")
+		data := make([]byte, 1024*1024*16)
+		r, err := rand.Read(data)
+		klog.V(0).Infof("read %v random data", r)
+		if err == nil {
+			ioutil.WriteFile("/dev/random", data, 0666)
+			ioutil.WriteFile("/dev/urandom", data, 0666)
+			ecnt := getEntropyCount()
+			if ecnt > max_ecnt {
+				max_ecnt = ecnt
+			}
+			if ecnt >= thres || ecnt < max_ecnt {
+				klog.V(0).Infof("seed random done")
+				return
+			}
+		} else {
+			klog.V(0).Error(err, "cannot read random data")
+		}
+	}
 }
