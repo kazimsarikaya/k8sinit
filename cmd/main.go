@@ -57,6 +57,8 @@ func loader() error {
 		return errors.Wrapf(err, "error at mounting sys vfses")
 	}
 
+	role := system.GetRole()
+
 	ic, err := system.ReadConfig()
 	if err != nil {
 		return errors.Wrapf(err, "cannot read config")
@@ -83,7 +85,6 @@ func loader() error {
 		poolName = ic.PoolName
 		ifname = ic.InternalNetwork
 	}
-	role := system.GetRole()
 	klog.V(0).Infof("setup management services")
 	managementServices, err := management.NewOrGetManagementServices(role, poolName, ifname, tftproot, htdocsDir)
 	if err != nil {

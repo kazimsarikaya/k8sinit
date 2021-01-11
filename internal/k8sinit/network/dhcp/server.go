@@ -26,11 +26,13 @@ import (
 	klog "k8s.io/klog/v2"
 	"net"
 	"sync"
+	"time"
 )
 
 type DhcpConf struct {
 	LeasesFile      string
 	Interface       string
+	ServerIP        net.IP
 	Mask            net.IPMask
 	PoolStart       uint32
 	MaxHost         int
@@ -57,7 +59,7 @@ func NewNonBlockingDhcpSever(poolName, ifname string) (*NonBlockingDhcpServer, e
 	}
 	lip := addrs[0].IP
 	start := network.Ip2Int(lip)
-	start = (start >> 4) << 4
+	start = ((start >> 4) << 4) + 10
 	size, bits := addrs[0].Mask.Size()
 	rembits := bits - size
 	max := (1 << (rembits + 1)) - 11
@@ -66,6 +68,7 @@ func NewNonBlockingDhcpSever(poolName, ifname string) (*NonBlockingDhcpServer, e
 	conf := DhcpConf{
 		LeasesFile:      confbase + "leases.json",
 		Interface:       ifname,
+		ServerIP:        lip,
 		StaticHostsFile: confbase + "static.json",
 		Mask:            addrs[0].Mask,
 		PoolStart:       start,
@@ -112,5 +115,47 @@ func (s *NonBlockingDhcpServer) Wait() {
 }
 
 func (s *NonBlockingDhcpServer) handler(conn net.PacketConn, peer net.Addr, m *dhcpv4.DHCPv4) {
-	klog.V(0).Infof("dhcp packet: %v", m)
+	if m == nil {
+		return
+	}
+	if m.OpCode != dhcpv4.OpcodeBootRequest {
+		return
+	}
+	klog.V(0).Infof("dhcp packet: %v, user-class: %v", m, m.UserClass())
+	reply, err := dhcpv4.NewReplyFromRequest(m)
+	if err != nil {
+		klog.V(0).Error(err, "cannot create dhcp reply")
+		return
+	}
+
+	reply.UpdateOption(dhcpv4.OptServerIdentifier(s.conf.ServerIP))
+	reply.UpdateOption(dhcpv4.OptSubnetMask(s.conf.Mask))
+	reply.UpdateOption(dhcpv4.OptDNS(s.conf.ServerIP))
+	reply.UpdateOption(dhcpv4.OptRouter(s.conf.ServerIP))
+	reply.UpdateOption(dhcpv4.OptNTPServers(s.conf.ServerIP))
+	reply.UpdateOption(dhcpv4.OptIPAddressLeaseTime(time.Minute * 30))
+
+	uses := m.UserClass()
+	if len(uses) == 1 && uses[0] == "iPXE" {
+		reply.UpdateOption(dhcpv4.OptBootFileName(fmt.Sprintf("http://%v:8000/api/network/tftp", s.conf.ServerIP)))
+	} else {
+		reply.UpdateOption(dhcpv4.OptBootFileName(k8sinit.UndiFilename))
+	}
+	reply.UpdateOption(dhcpv4.OptTFTPServerName(s.conf.ServerIP.String()))
+	reply.YourIPAddr = network.Int2Ip(s.conf.PoolStart)
+	reply.ServerIPAddr = s.conf.ServerIP
+
+	switch mt := m.MessageType(); mt {
+	case dhcpv4.MessageTypeDiscover:
+		reply.UpdateOption(dhcpv4.OptMessageType(dhcpv4.MessageTypeOffer))
+	case dhcpv4.MessageTypeRequest:
+		reply.UpdateOption(dhcpv4.OptMessageType(dhcpv4.MessageTypeAck))
+	default:
+		klog.V(0).Error(errors.New("unknown dhcp mt"), "cannot select dhcp mt")
+		return
+	}
+	klog.V(0).Infof("dhcp packet: %v, user-class: %v", reply, reply.UserClass())
+	if _, err := conn.WriteTo(reply.ToBytes(), peer); err != nil {
+		klog.V(0).Error(err, "cannot send dhcp reply")
+	}
 }

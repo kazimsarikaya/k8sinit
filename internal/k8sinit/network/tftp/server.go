@@ -18,6 +18,7 @@ package tftp
 
 import (
 	"fmt"
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit"
 	"github.com/pin/tftp"
 	"io"
 	klog "k8s.io/klog/v2"
@@ -54,7 +55,7 @@ func NewNonBlockingTftpSever(tftproot string) (*NonBlockingTftpSever, error) {
 func (s *NonBlockingTftpSever) Start(ipaddr string) {
 	undi, err := DownloadIpxeUndi(s.tftproot)
 	if err != nil {
-		klog.V(0).Error(err, "cannot download "+undifilename)
+		klog.V(0).Error(err, "cannot download "+k8sinit.UndiFilename)
 	}
 	s.undi = undi
 	s.wg.Add(1)
@@ -81,8 +82,8 @@ func (s *NonBlockingTftpSever) Wait() {
 }
 
 func (s *NonBlockingTftpSever) readHandler(filename string, rf io.ReaderFrom) error {
-	if filename != undifilename {
-		return fmt.Errorf("only %s supported", undifilename)
+	if filename != k8sinit.UndiFilename {
+		return fmt.Errorf("only %s supported", k8sinit.UndiFilename)
 	}
 	file, err := os.Open(s.undi)
 	if err != nil {

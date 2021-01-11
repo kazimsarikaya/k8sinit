@@ -121,13 +121,16 @@ func WriteConfig(config k8sinit.InstallConfig) error {
 func ReadConfig() (*k8sinit.InstallConfig, error) {
 	found, poolName, err := GetKernelParameterValue("k8sinit.pool")
 	if !found {
-		return nil, nil
+		poolName = "zp_k8s"
 	}
 	if err != nil {
 		return nil, err
 	}
 	in, err := os.Open("/" + poolName.(string) + "/config/config.json")
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, errors.Wrapf(err, "cannot open config")
 	}
 	defer in.Close()

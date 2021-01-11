@@ -22,6 +22,9 @@ import (
 
 const (
 	RoleManager = "manager"
+
+	UndiUrl      string = "http://boot.ipxe.org/undionly.kpxe"
+	UndiFilename string = "undionly.kpxe"
 )
 
 var (

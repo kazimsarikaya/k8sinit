@@ -17,25 +17,21 @@ limitations under the License.
 package tftp
 
 import (
+	"github.com/kazimsarikaya/k8sinit/internal/k8sinit"
 	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"os"
 )
 
-const (
-	undiUrl      string = "http://boot.ipxe.org/undionly.kpxe"
-	undifilename string = "undionly.kpxe"
-)
-
 func DownloadIpxeUndi(tftproot string) (string, error) {
-	resp, err := http.Get(undiUrl)
+	resp, err := http.Get(k8sinit.UndiUrl)
 	if err != nil {
 		return "", errors.Wrapf(err, "cannot get undi pxe")
 	}
 	defer resp.Body.Close()
 
-	filepath := tftproot + "/" + undifilename
+	filepath := tftproot + "/" + k8sinit.UndiFilename
 	out, err := os.Create(filepath)
 	if err != nil {
 		return "", errors.Wrapf(err, "cannot create local undi pxe")
