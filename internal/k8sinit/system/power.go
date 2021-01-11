@@ -18,8 +18,12 @@ package system
 
 import (
 	"golang.org/x/sys/unix"
+	"io/ioutil"
 	klog "k8s.io/klog/v2"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 type StopAller interface {
@@ -32,10 +36,35 @@ func SetManagementServicesStopper(ms StopAller) {
 	managementServicesStopper = ms
 }
 
+func reapProcs() {
+	cmdlines, err := filepath.Glob("/proc/*/cmdline")
+	if err != nil {
+		klog.V(0).Error(err, "error during fetching cmdlines")
+	}
+	for _, cmdline := range cmdlines {
+		if cmdline == "/proc/1/cmdline" {
+			continue
+		}
+		data, err := ioutil.ReadFile(cmdline)
+		if err != nil || len(data) == 0 {
+			continue
+		}
+		pidstr := strings.TrimSuffix(cmdline[6:], "/cmdline")
+		pid, err := strconv.ParseInt(pidstr, 10, 32)
+		if err != nil {
+			continue
+		}
+		p, err := os.FindProcess(int(pid))
+		p.Kill()
+	}
+}
+
 func stopSystem() {
 	managementServicesStopper.StopAll()
 	writeRandomSeed()
 	CloseZpools()
+	reapProcs()
+	klog.V(0).Infof("System stopped")
 	klog.Flush()
 }
 
@@ -51,4 +80,19 @@ func Reboot() {
 	stopSystem()
 	unix.Reboot(unix.LINUX_REBOOT_CMD_RESTART)
 	os.Exit(0)
+}
+
+func SendPoweroff() {
+	p, err := os.FindProcess(1)
+	if err != nil {
+		return
+	}
+	p.Signal(unix.SIGUSR2)
+}
+func SendReboot() {
+	p, err := os.FindProcess(1)
+	if err != nil {
+		return
+	}
+	p.Signal(unix.SIGUSR1)
 }

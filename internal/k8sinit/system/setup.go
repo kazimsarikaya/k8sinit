@@ -27,6 +27,7 @@ import (
 	klog "k8s.io/klog/v2"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 )
 
@@ -36,13 +37,28 @@ var (
 
 func FirstStep() error {
 	unix.Setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+	os.Symlink("/init", "/sbin/reboot")
+	os.Symlink("/init", "/sbin/poweroff")
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, unix.SIGUSR1, unix.SIGUSR2)
+	go func() {
+		sig := <-c
+		if sig == unix.SIGUSR1 {
+			Reboot()
+		}
+		if sig == unix.SIGUSR2 {
+			Poweroff()
+		}
+	}()
+
 	cmd := exec.Command("/bin/busybox", "--install", "-s")
 	var out bytes.Buffer
 	cmd.Stdin = strings.NewReader("")
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "cannot setup busybox")
+		return errors.Wrapf(err, "cannot setup busybox: %v", out.String())
 	}
 	return nil
 }

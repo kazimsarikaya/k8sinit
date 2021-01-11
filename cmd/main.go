@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	klog "k8s.io/klog/v2"
+	"os"
 	"strings"
 	"time"
 )
@@ -131,7 +132,18 @@ func showUI() error {
 
 func main() {
 	flag.Parse()
-	klog.V(0).Infof("hello from k3s init")
+
+	if os.Args[0] == "/sbin/reboot" || os.Args[0] == "reboot" {
+		system.SendReboot()
+		return
+	}
+
+	if os.Args[0] == "/sbin/poweroff" || os.Args[0] == "poweroff" {
+		system.SendPoweroff()
+		return
+	}
+
+	klog.V(0).Infof("hello from k3s init, called: %v", os.Args[0])
 	err := loader()
 	if err != nil {
 		klog.V(0).Error(err, "cannot load system")
