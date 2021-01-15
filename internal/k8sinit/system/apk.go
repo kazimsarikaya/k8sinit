@@ -29,8 +29,8 @@ func SetupDefaultApkRepos() error {
 		return errors.Wrapf(err, "cannot init apk db")
 	}
 
-	repos := `http://dl-cdn.alpinelinux.org/alpine/v3.12/main
-http://dl-cdn.alpinelinux.org/alpine/v3.12/community
+	repos := `http://dl-cdn.alpinelinux.org/alpine/v3.13/main
+http://dl-cdn.alpinelinux.org/alpine/v3.13/community
 `
 	err := ioutil.WriteFile("/etc/apk/repositories", []byte(repos), 0644)
 	if err != nil {

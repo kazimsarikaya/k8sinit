@@ -4,9 +4,7 @@ This project's aim is create automous Kubernetes manager with web panel.
 
 ## Building
 
-Building requires alpine 3.12 with zfs support. Additionaly genisoimage binary is required.
-
-For building go 1.15 and make is essential.
+Building requires alpine 3.13. Minimal setup with make command is enough. Also open community repo. Required packets will be installed by scripts
 
 For local builds
 
@@ -14,7 +12,7 @@ For local builds
 make build
 ```
 
-For remote builds copy rbuild.env.sample to rbuild.env and modify it as required. Then
+For remote builds copy rbuild.env.sample to rbuild.env and modify it as required. Allow root login with ssh key. Then
 
 ```
 make remote

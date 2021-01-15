@@ -2,6 +2,8 @@
 
 cmd=${1:-build}
 
+apk add linux-firmware-none linux-lts zfs-lts zfs go rsync blkid lsblk git cdrkit parted make
+
 if [ "x$cmd" == "xbuild" ]; then
   modprobe zfs
   REV=$(git describe --long --tags --match='v*' --dirty 2>/dev/null || git rev-list -n1 HEAD)
@@ -17,7 +19,7 @@ if [ "x$cmd" == "xbuild" ]; then
   HTDOCS="`pwd`/htdocs"
   go build -ldflags "${LDFLAGS} -X main.version=$REV -X main.buildTime=$NOW -X 'main.goVersion=${GOV}' -X main.htdocsDir=${HTDOCS}"  -o ./bin/init ./cmd
 
-  for m in $(lsmod |awk '{print $1}'|grep -v Module); do find /lib/modules/5.4.84-0-lts/ -name "$m.ko"; done |sort|sed -r "s%^/lib/modules/$(uname -r)/%%g" > hack/mkinitfs/features.d/k8sinit.modules
+  for m in $(lsmod |awk '{print $1}'|grep -v Module); do find /lib/modules/`uname -r`/ -name "$m.ko"; done |sort|sed -r "s%^/lib/modules/$(uname -r)/%%g" > hack/mkinitfs/features.d/k8sinit.modules
   find `pwd`/htdocs > `pwd`/hack/mkinitfs/features.d/htdocs.files
   rm -fr tmp/*
   mkdir -p tmp/iso/syslinux
